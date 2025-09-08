@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>Riwayat Absensi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6); /* gradasi biru gelap */
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 420px;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+    table {
+      font-size: 0.5rem;
+    }
+    th, td {
+      word-break: break-word;
+      text-align: center;
+    }
+    td img {
+      max-height: 48px;
+      max-width: 48px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .nav-bar {
+      display: flex;
+      justify-content: space-around;
+      padding: 12px;
+      background: linear-gradient(to right, #1e3a8a, #2563eb); /* gradasi biru */
+      border-top: 2px solid #3b82f6;
+      position: sticky;
+      bottom: 0;
+    }
+    .nav-btn {
+      flex: 1;
+      text-align: center;
+      margin: 0 5px;
+      padding: 10px;
+      font-weight: bold;
+      border-radius: 12px;
+      transition: 0.3s;
+    }
+    .nav-btn:hover {
+      transform: scale(1.05);
+    }
+  </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqnNGO9ko0nlht3ljrqVGuYm7TaIbN6yo",
+      authDomain: "sample-firebase-ai-app-f1543.firebaseapp.com",
+      projectId: "sample-firebase-ai-app-f1543",
+      storageBucket: "sample-firebase-ai-app-f1543.firebasestorage.app",
+      messagingSenderId: "432850053606",
+      appId: "1:432850053606:web:943f5b4e2af9889c374e27"
+    };
+
+    let db;
+
+    const loadRiwayat = async () => {
+      const tableBody = document.getElementById("riwayat-body");
+      tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4">⏳ Memuat data...</td></tr>`;
+
+      try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        const auth = getAuth(app);
+        await signInAnonymously(auth);
+
+        const q = query(collection(db, "absensi"), orderBy("waktu", "desc"));
+        const snapshot = await getDocs(q);
+
+        tableBody.innerHTML = "";
+
+        if (snapshot.empty) {
+          tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4">❌ Belum ada data absensi.</td></tr>`;
+          return;
+        }
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const waktu = data.waktu?.toDate().toLocaleString("id-ID") || "-";
+          const row = `
+            <tr class="border-b border-gray-200 hover:bg-blue-50">
+              <td class="p-2">${data.nama || "-"}</td>
+              <td class="p-2">${waktu}</td>
+              <td class="p-2">${data.lokasi || "-"}</td>
+              <td class="p-2 font-semibold ${data.status === "Hadir" ? "text-green-600" : data.status === "Terlambat" ? "text-yellow-600" : "text-red-600"}">${data.status || "-"}</td>
+              <td class="p-2">${data.foto ? `<img src="${data.foto}" alt="foto" class="rounded-lg">` : "-"}
+              </td>
+            </tr>
+          `;
+          tableBody.innerHTML += row;
+        });
+      } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">⚠️ Gagal memuat data.</td></tr>`;
+        console.error(err);
+      }
+    };
+
+    window.onload = loadRiwayat;
+  </script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <div class="p-4 bg-blue-700 text-white shadow">
+      <h1 class="text-center font-bold">📑 Riwayat Absensi</h1>
+    </div>
+
+    <!-- Tabel -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse border border-gray-200">
+          <thead class="bg-blue-600 text-white sticky top-0">
+            <tr>
+              <th class="p-1">Nama</th>
+              <th class="p-1">Waktu</th>
+              <th class="p-1">Lokasi</th>
+              <th class="p-0,1">Status</th>
+              <th class="p-1">Foto</th>
+            </tr>
+          </thead>
+          <tbody id="riwayat-body">
+            <!-- Data akan dimuat dari Firestore -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Navigasi bawah -->
+    <div class="nav-bar">
+      <a href="index.html" class="flex-1 text-center px-3 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600">🏠 Absensi</a>
+      <a href="riwayat.html" class="flex-1 text-center px-3 py-2 bg-blue-800 text-white rounded-lg shadow hover:bg-blue-900">📑 Riwayat</a>
+    </div>
+  </div>
+</body>
+</html>
